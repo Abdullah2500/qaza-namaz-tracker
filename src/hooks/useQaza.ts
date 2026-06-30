@@ -29,6 +29,8 @@ export function useQaza(session: Session | null): QazaStore {
 
   // Skip the cloud push that would otherwise follow when we *adopt* cloud data.
   const suppressPushRef = useRef(false)
+  // Guard against overlapping reconciles from rapid focus/visibility events.
+  const reconcilingRef = useRef(false)
   const userId = session?.user.id ?? null
 
   // Persist every change to localStorage immediately (offline-first).
@@ -69,30 +71,25 @@ export function useQaza(session: Session | null): QazaStore {
     setSyncStatus(error ? 'error' : 'synced')
   }, [userId])
 
-  // Reconcile with the cloud whenever the signed-in user changes.
-  useEffect(() => {
-    if (!supabase || !userId) {
-      if (isSupabaseEnabled) setSyncStatus('idle')
-      return
-    }
-
-    let cancelled = false
-    ;(async () => {
-      setSyncStatus('syncing')
-      const { data, error } = await supabase!
+  // Pull the cloud row and reconcile with local by last-write-wins.
+  // Safe to call any time: login, app focus/visibility, or regained network.
+  const reconcile = useCallback(async () => {
+    if (!supabase || !userId || reconcilingRef.current) return
+    reconcilingRef.current = true
+    setSyncStatus('syncing')
+    try {
+      const { data, error } = await supabase
         .from(TABLE)
         .select('counts, updated_at')
         .eq('user_id', userId)
         .maybeSingle()
 
-      if (cancelled) return
       if (error) {
         setSyncStatus('error')
         return
       }
 
       const local = stateRef.current
-
       if (data) {
         const cloudUpdatedAt: string = data.updated_at ?? new Date(0).toISOString()
         if (new Date(cloudUpdatedAt).getTime() > new Date(local.updatedAt).getTime()) {
@@ -105,13 +102,39 @@ export function useQaza(session: Session | null): QazaStore {
       }
       // No cloud row yet, or local is newer/equal — local wins, push it up.
       await pushToCloud(local)
-    })()
-
-    return () => {
-      cancelled = true
+    } finally {
+      reconcilingRef.current = false
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId])
+  }, [userId, pushToCloud])
+
+  // Reconcile when the signed-in user changes (initial load / login).
+  useEffect(() => {
+    if (!supabase || !userId) {
+      if (isSupabaseEnabled) setSyncStatus('idle')
+      return
+    }
+    reconcile()
+  }, [userId, reconcile])
+
+  // Re-pull fresh data every time the app regains focus/visibility or the
+  // network comes back, so switching back to the PWA shows the latest counts
+  // without a manual restart.
+  useEffect(() => {
+    if (!supabase || !userId) return
+    const onActive = () => {
+      if (document.visibilityState === 'visible') reconcile()
+    }
+    document.addEventListener('visibilitychange', onActive)
+    window.addEventListener('focus', onActive)
+    window.addEventListener('pageshow', onActive)
+    window.addEventListener('online', onActive)
+    return () => {
+      document.removeEventListener('visibilitychange', onActive)
+      window.removeEventListener('focus', onActive)
+      window.removeEventListener('pageshow', onActive)
+      window.removeEventListener('online', onActive)
+    }
+  }, [userId, reconcile])
 
   // Debounced push of ongoing local edits to the cloud.
   const firstRunRef = useRef(true)
