@@ -1,4 +1,4 @@
-export type PrayerKey = 'fajr' | 'zuhr' | 'asr' | 'maghrib' | 'isha'
+export type PrayerKey = 'fajr' | 'zuhr' | 'asr' | 'maghrib' | 'isha' | 'witr'
 
 export interface Prayer {
   key: PrayerKey
@@ -14,6 +14,7 @@ export const PRAYERS: Prayer[] = [
   { key: 'asr', name: 'Asr', arabic: 'العصر', time: 'Afternoon' },
   { key: 'maghrib', name: 'Maghrib', arabic: 'المغرب', time: 'Sunset' },
   { key: 'isha', name: 'Isha', arabic: 'العشاء', time: 'Night' },
+  { key: 'witr', name: 'Witr', arabic: 'الوتر', time: 'After Isha' },
 ]
 
 export type Counts = Record<PrayerKey, number>
@@ -24,6 +25,7 @@ export const EMPTY_COUNTS: Counts = {
   asr: 0,
   maghrib: 0,
   isha: 0,
+  witr: 0,
 }
 
 /** Coerce arbitrary stored/remote data into a valid Counts object. */
