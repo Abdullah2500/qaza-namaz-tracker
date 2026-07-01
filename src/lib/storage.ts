@@ -6,7 +6,7 @@ export interface StoredState {
   counts: Counts
   /** ISO timestamp of the last local change — used for last-write-wins sync. */
   updatedAt: string
-  /** Per-prayer ISO timestamp of the last local edit. Local-only, not synced to the cloud. */
+  /** Per-prayer ISO timestamp of the last edit. */
   lastEdited: LastEdited
 }
 

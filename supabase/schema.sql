@@ -3,10 +3,16 @@
 
 -- One row per user holding their qaza counts as JSON.
 create table if not exists public.qaza_counts (
-  user_id    uuid primary key references auth.users (id) on delete cascade,
-  counts     jsonb not null default '{}'::jsonb,
-  updated_at timestamptz not null default now()
+  user_id     uuid primary key references auth.users (id) on delete cascade,
+  counts      jsonb not null default '{}'::jsonb,
+  updated_at  timestamptz not null default now(),
+  -- Per-prayer ISO timestamp of the last edit, e.g. {"zuhr": "2026-07-01T19:57:00.000Z"}.
+  last_edited jsonb not null default '{}'::jsonb
 );
+
+-- Existing installs: add the column if the table predates this field.
+alter table public.qaza_counts
+  add column if not exists last_edited jsonb not null default '{}'::jsonb;
 
 -- Row Level Security: every user can only read/write their own row.
 alter table public.qaza_counts enable row level security;

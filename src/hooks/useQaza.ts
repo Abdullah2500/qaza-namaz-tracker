@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { Counts, EMPTY_COUNTS, LastEdited, PrayerKey, normalizeCounts, totalRemaining } from '../lib/prayers'
+import {
+  Counts,
+  EMPTY_COUNTS,
+  LastEdited,
+  PrayerKey,
+  normalizeCounts,
+  normalizeLastEdited,
+  totalRemaining,
+} from '../lib/prayers'
 import { StoredState, loadLocal, saveLocal } from '../lib/storage'
 import { TABLE, isSupabaseEnabled, supabase } from '../lib/supabase'
 
@@ -74,9 +82,12 @@ export function useQaza(session: Session | null): QazaStore {
   const pushToCloud = useCallback(async (snapshot: StoredState) => {
     if (!supabase || !userId) return
     setSyncStatus('syncing')
-    const { error } = await supabase
-      .from(TABLE)
-      .upsert({ user_id: userId, counts: snapshot.counts, updated_at: snapshot.updatedAt })
+    const { error } = await supabase.from(TABLE).upsert({
+      user_id: userId,
+      counts: snapshot.counts,
+      updated_at: snapshot.updatedAt,
+      last_edited: snapshot.lastEdited,
+    })
     setSyncStatus(error ? 'error' : 'synced')
   }, [userId])
 
@@ -89,7 +100,7 @@ export function useQaza(session: Session | null): QazaStore {
     try {
       const { data, error } = await supabase
         .from(TABLE)
-        .select('counts, updated_at')
+        .select('counts, updated_at, last_edited')
         .eq('user_id', userId)
         .maybeSingle()
 
@@ -103,13 +114,12 @@ export function useQaza(session: Session | null): QazaStore {
         const cloudUpdatedAt: string = data.updated_at ?? new Date(0).toISOString()
         if (new Date(cloudUpdatedAt).getTime() > new Date(local.updatedAt).getTime()) {
           // Cloud is newer — adopt it locally without echoing a push back up.
-          // lastEdited is local-only (not part of the cloud row), so keep it as-is.
           suppressPushRef.current = true
-          setState((prev) => ({
+          setState({
             counts: normalizeCounts(data.counts),
             updatedAt: cloudUpdatedAt,
-            lastEdited: prev.lastEdited,
-          }))
+            lastEdited: normalizeLastEdited(data.last_edited),
+          })
           setSyncStatus('synced')
           return
         }
