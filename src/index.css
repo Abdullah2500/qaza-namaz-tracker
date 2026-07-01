@@ -306,25 +306,25 @@ body {
 /* --------------------------------------------------------------- summary */
 .summary {
   text-align: center;
-  margin: 18px auto 24px;
-  padding: 22px 20px;
+  margin: 12px auto 14px;
+  padding: 14px 16px;
   background: linear-gradient(160deg, var(--sky-500), var(--sky-600));
   color: #fff;
-  border-radius: var(--radius);
+  border-radius: 16px;
   box-shadow: var(--shadow);
 }
 
 .summary__label {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   opacity: 0.85;
 }
 
 .summary__value {
-  margin: 4px 0 10px;
-  font-size: 3.4rem;
+  margin: 2px 0 6px;
+  font-size: 2.2rem;
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -333,8 +333,8 @@ body {
 .summary__hint {
   margin: 0 auto;
   max-width: 420px;
-  font-size: 0.8rem;
-  line-height: 1.5;
+  font-size: 0.7rem;
+  line-height: 1.4;
   opacity: 0.92;
 }
 .summary__hint strong {
@@ -344,16 +344,16 @@ body {
 /* ------------------------------------------------------------------ grid */
 .grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 /* ------------------------------------------------------------------ card */
 .card {
   background: #fff;
   border: 1px solid var(--sky-100);
-  border-radius: var(--radius);
-  padding: 18px 18px 14px;
+  border-radius: 14px;
+  padding: 12px 12px 10px;
   box-shadow: var(--shadow-soft);
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.2s ease;
 }
@@ -367,7 +367,7 @@ body {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
 }
 
 .card__titles {
@@ -377,19 +377,19 @@ body {
 
 .card__name {
   margin: 0;
-  font-size: 1.18rem;
+  font-size: 0.95rem;
   font-weight: 700;
   letter-spacing: -0.01em;
 }
 
 .card__time {
-  font-size: 0.76rem;
+  font-size: 0.65rem;
   color: var(--ink-faint);
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 .card__arabic {
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   color: var(--sky-500);
   line-height: 1.2;
 }
@@ -398,17 +398,17 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  margin: 14px 0 6px;
+  gap: 8px;
+  margin: 10px 0 4px;
 }
 
 .btn {
-  width: 54px;
-  height: 54px;
+  width: 36px;
+  height: 36px;
   flex: none;
-  border-radius: 16px;
+  border-radius: 10px;
   border: none;
-  font-size: 1.7rem;
+  font-size: 1.25rem;
   font-weight: 600;
   line-height: 1;
   cursor: pointer;
@@ -447,7 +447,7 @@ body {
   flex: 1;
   min-width: 0;
   text-align: center;
-  font-size: 2.6rem;
+  font-size: 1.55rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: var(--ink);
@@ -493,13 +493,20 @@ body {
 .card__label {
   margin: 0;
   text-align: center;
-  font-size: 0.74rem;
+  font-size: 0.62rem;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.06em;
   color: var(--ink-faint);
 }
 .card--cleared .card__label {
   color: var(--ok);
+}
+
+.card__lastedit {
+  margin: 4px 0 0;
+  text-align: center;
+  font-size: 0.66rem;
+  color: var(--ink-faint);
 }
 
 /* ---------------------------------------------------------------- footer */
@@ -537,11 +544,71 @@ body {
 }
 
 /* ------------------------------------------------------------ responsive */
+/* Below 560px (phones) the compact card/grid/summary styles above apply so
+   all six cards fit on one screen without scrolling. From 560px up we have
+   room to spare, so restore the roomier, larger-type layout. */
 @media (min-width: 560px) {
-  .grid {
-    grid-template-columns: 1fr 1fr;
-  }
   .topbar__title {
     font-size: 1.25rem;
+  }
+
+  .summary {
+    margin: 18px auto 24px;
+    padding: 22px 20px;
+    border-radius: var(--radius);
+  }
+  .summary__label {
+    font-size: 0.82rem;
+  }
+  .summary__value {
+    margin: 4px 0 10px;
+    font-size: 3.4rem;
+  }
+  .summary__hint {
+    font-size: 0.8rem;
+    line-height: 1.5;
+  }
+
+  .grid {
+    gap: 14px;
+  }
+
+  .card {
+    border-radius: var(--radius);
+    padding: 18px 18px 14px;
+  }
+  .card__head {
+    gap: 12px;
+  }
+  .card__name {
+    font-size: 1.18rem;
+  }
+  .card__time {
+    font-size: 0.76rem;
+    margin-top: 2px;
+  }
+  .card__arabic {
+    font-size: 1.5rem;
+  }
+  .card__counter {
+    gap: 14px;
+    margin: 14px 0 6px;
+  }
+  .btn {
+    width: 54px;
+    height: 54px;
+    border-radius: 16px;
+    font-size: 1.7rem;
+  }
+  .card__count,
+  .card__count-input {
+    font-size: 2.6rem;
+  }
+  .card__label {
+    font-size: 0.74rem;
+    letter-spacing: 0.07em;
+  }
+  .card__lastedit {
+    font-size: 0.72rem;
   }
 }

@@ -7,7 +7,7 @@ import AuthBar from './components/AuthBar'
 
 export default function App() {
   const { session } = useAuth()
-  const { counts, total, syncStatus, increment, decrement, setCount, resetAll } =
+  const { counts, total, lastEdited, syncStatus, increment, decrement, setCount, resetAll } =
     useQaza(session)
   const [confirmingReset, setConfirmingReset] = useState(false)
 
@@ -41,6 +41,7 @@ export default function App() {
               key={prayer.key}
               prayer={prayer}
               count={counts[prayer.key]}
+              lastEditedAt={prayer.key === 'zuhr' ? lastEdited.zuhr : undefined}
               onIncrement={() => increment(prayer.key)}
               onDecrement={() => decrement(prayer.key)}
               onSet={(value) => setCount(prayer.key, value)}

@@ -46,3 +46,20 @@ export function normalizeCounts(input: unknown): Counts {
 export function totalRemaining(counts: Counts): number {
   return PRAYERS.reduce((sum, p) => sum + (counts[p.key] || 0), 0)
 }
+
+/** Per-prayer ISO timestamp of the last local edit. */
+export type LastEdited = Partial<Record<PrayerKey, string>>
+
+/** Coerce arbitrary stored data into a valid LastEdited object. */
+export function normalizeLastEdited(input: unknown): LastEdited {
+  const result: LastEdited = {}
+  if (input && typeof input === 'object') {
+    for (const prayer of PRAYERS) {
+      const value = (input as Record<string, unknown>)[prayer.key]
+      if (typeof value === 'string') {
+        result[prayer.key] = value
+      }
+    }
+  }
+  return result
+}

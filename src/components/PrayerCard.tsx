@@ -4,14 +4,31 @@ import type { Prayer } from '../lib/prayers'
 interface PrayerCardProps {
   prayer: Prayer
   count: number
+  lastEditedAt?: string
   onIncrement: () => void
   onDecrement: () => void
   onSet: (value: number) => void
 }
 
+function formatLastEdited(iso: string): string {
+  const date = new Date(iso)
+  const now = new Date()
+  const time = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+
+  if (date.toDateString() === now.toDateString()) return `Last edited today at ${time}`
+
+  const yesterday = new Date(now)
+  yesterday.setDate(now.getDate() - 1)
+  if (date.toDateString() === yesterday.toDateString()) return `Last edited yesterday at ${time}`
+
+  const day = date.toLocaleDateString([], { month: 'short', day: 'numeric' })
+  return `Last edited ${day} at ${time}`
+}
+
 export default function PrayerCard({
   prayer,
   count,
+  lastEditedAt,
   onIncrement,
   onDecrement,
   onSet,
@@ -106,6 +123,7 @@ export default function PrayerCard({
       </div>
 
       <p className="card__label">{cleared ? 'All cleared' : 'qaza remaining'}</p>
+      {lastEditedAt && <p className="card__lastedit">{formatLastEdited(lastEditedAt)}</p>}
     </article>
   )
 }

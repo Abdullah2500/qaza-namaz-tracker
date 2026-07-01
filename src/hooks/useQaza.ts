@@ -1,18 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { Counts, EMPTY_COUNTS, PrayerKey, normalizeCounts, totalRemaining } from '../lib/prayers'
+import { Counts, EMPTY_COUNTS, LastEdited, PrayerKey, normalizeCounts, totalRemaining } from '../lib/prayers'
 import { StoredState, loadLocal, saveLocal } from '../lib/storage'
 import { TABLE, isSupabaseEnabled, supabase } from '../lib/supabase'
 
 export type SyncStatus = 'disabled' | 'idle' | 'syncing' | 'synced' | 'error'
 
 function freshState(): StoredState {
-  return loadLocal() ?? { counts: { ...EMPTY_COUNTS }, updatedAt: new Date(0).toISOString() }
+  return (
+    loadLocal() ?? { counts: { ...EMPTY_COUNTS }, updatedAt: new Date(0).toISOString(), lastEdited: {} }
+  )
 }
 
 export interface QazaStore {
   counts: Counts
   total: number
+  lastEdited: LastEdited
   syncStatus: SyncStatus
   increment: (key: PrayerKey) => void
   decrement: (key: PrayerKey) => void
@@ -38,29 +41,35 @@ export function useQaza(session: Session | null): QazaStore {
     saveLocal(state)
   }, [state])
 
-  const writeCounts = useCallback((next: Counts) => {
-    setState({ counts: next, updatedAt: new Date().toISOString() })
+  // Update a prayer's count and stamp it as the most recently edited prayer.
+  const touch = useCallback((key: PrayerKey, next: Counts) => {
+    const now = new Date().toISOString()
+    setState((prev) => ({
+      counts: next,
+      updatedAt: now,
+      lastEdited: { ...prev.lastEdited, [key]: now },
+    }))
   }, [])
 
   const increment = useCallback((key: PrayerKey) => {
     const cur = stateRef.current.counts
-    writeCounts({ ...cur, [key]: (cur[key] || 0) + 1 })
-  }, [writeCounts])
+    touch(key, { ...cur, [key]: (cur[key] || 0) + 1 })
+  }, [touch])
 
   const decrement = useCallback((key: PrayerKey) => {
     const cur = stateRef.current.counts
-    writeCounts({ ...cur, [key]: Math.max(0, (cur[key] || 0) - 1) })
-  }, [writeCounts])
+    touch(key, { ...cur, [key]: Math.max(0, (cur[key] || 0) - 1) })
+  }, [touch])
 
   const setCount = useCallback((key: PrayerKey, value: number) => {
     const cur = stateRef.current.counts
     const safe = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0
-    writeCounts({ ...cur, [key]: safe })
-  }, [writeCounts])
+    touch(key, { ...cur, [key]: safe })
+  }, [touch])
 
   const resetAll = useCallback(() => {
-    writeCounts({ ...EMPTY_COUNTS })
-  }, [writeCounts])
+    setState({ counts: { ...EMPTY_COUNTS }, updatedAt: new Date().toISOString(), lastEdited: {} })
+  }, [])
 
   const pushToCloud = useCallback(async (snapshot: StoredState) => {
     if (!supabase || !userId) return
@@ -94,8 +103,13 @@ export function useQaza(session: Session | null): QazaStore {
         const cloudUpdatedAt: string = data.updated_at ?? new Date(0).toISOString()
         if (new Date(cloudUpdatedAt).getTime() > new Date(local.updatedAt).getTime()) {
           // Cloud is newer — adopt it locally without echoing a push back up.
+          // lastEdited is local-only (not part of the cloud row), so keep it as-is.
           suppressPushRef.current = true
-          setState({ counts: normalizeCounts(data.counts), updatedAt: cloudUpdatedAt })
+          setState((prev) => ({
+            counts: normalizeCounts(data.counts),
+            updatedAt: cloudUpdatedAt,
+            lastEdited: prev.lastEdited,
+          }))
           setSyncStatus('synced')
           return
         }
@@ -157,6 +171,7 @@ export function useQaza(session: Session | null): QazaStore {
   return {
     counts: state.counts,
     total: totalRemaining(state.counts),
+    lastEdited: state.lastEdited,
     syncStatus,
     increment,
     decrement,

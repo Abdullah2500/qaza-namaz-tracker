@@ -1,4 +1,4 @@
-import { Counts, normalizeCounts } from './prayers'
+import { Counts, LastEdited, normalizeCounts, normalizeLastEdited } from './prayers'
 
 const STORAGE_KEY = 'qaza-tracker-v1'
 
@@ -6,6 +6,8 @@ export interface StoredState {
   counts: Counts
   /** ISO timestamp of the last local change — used for last-write-wins sync. */
   updatedAt: string
+  /** Per-prayer ISO timestamp of the last local edit. Local-only, not synced to the cloud. */
+  lastEdited: LastEdited
 }
 
 export function loadLocal(): StoredState | null {
@@ -19,6 +21,7 @@ export function loadLocal(): StoredState | null {
         typeof parsed?.updatedAt === 'string'
           ? parsed.updatedAt
           : new Date(0).toISOString(),
+      lastEdited: normalizeLastEdited(parsed?.lastEdited),
     }
   } catch {
     return null
